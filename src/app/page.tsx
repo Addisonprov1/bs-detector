@@ -1,5 +1,6 @@
 import { CommandPalette } from '@/components/CommandPalette';
 import { Leaderboard } from '@/components/Leaderboard';
+import { PasteTranscript } from '@/components/PasteTranscript';
 
 export default function HomePage() {
   return (
@@ -16,6 +17,11 @@ export default function HomePage() {
 
       {/* Search */}
       <CommandPalette />
+
+      {/* Paste option */}
+      <div className="text-center mt-4">
+        <PasteTranscript />
+      </div>
 
       {/* Leaderboard */}
       <div className="mt-16" id="leaderboard">

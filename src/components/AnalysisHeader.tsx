@@ -25,7 +25,7 @@ export function AnalysisHeader({ symbol, quarter, year, date, analysis }: Props)
         <h1 className="text-2xl font-bold mt-1">
           {symbol}{' '}
           <span className="text-sm font-normal text-[var(--color-text-muted)]">
-            Q{quarter} {year} Earnings Call
+            {quarter > 0 ? `Q${quarter} ${year} Earnings Call` : 'Earnings Call Analysis'}
           </span>
         </h1>
         <p className="text-xs text-[var(--color-text-muted)] mt-1">{date}</p>

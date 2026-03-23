@@ -1,11 +1,11 @@
 import type { TranscriptMeta } from './types';
 
-const FMP_BASE = 'https://financialmodelingprep.com/api';
+const FMP_BASE = 'https://financialmodelingprep.com';
 const API_KEY = process.env.FMP_API_KEY ?? '';
 
-interface FMPTranscript {
+interface FMPTranscriptResponse {
   symbol: string;
-  quarter: number;
+  period: string;
   year: number;
   date: string;
   content: string;
@@ -19,24 +19,27 @@ interface FMPSearchResult {
   exchangeShortName: string;
 }
 
-interface FMPTranscriptList {
-  0: number; // quarter
-  1: number; // year
-  2: string; // date
-}
-
 export async function searchCompanies(query: string): Promise<FMPSearchResult[]> {
   try {
-    const url = `${FMP_BASE}/v3/search?query=${encodeURIComponent(query)}&limit=20&apikey=${API_KEY}`;
+    // Use the stable search-name endpoint
+    const url = `${FMP_BASE}/stable/search-name?query=${encodeURIComponent(query)}&limit=20&apikey=${API_KEY}`;
     console.log('[FMP] searchCompanies:', url.replace(API_KEY, '***'));
     const res = await fetch(url);
     if (!res.ok) {
-      console.error('[FMP] searchCompanies failed:', res.status, await res.text());
+      const text = await res.text();
+      console.error('[FMP] searchCompanies failed:', res.status, text);
       return [];
     }
     const data = await res.json();
-    console.log('[FMP] searchCompanies results:', data?.length ?? 0);
-    return Array.isArray(data) ? data : [];
+    if (!Array.isArray(data)) return [];
+    // Map response to our interface (stable API uses different field names)
+    return data.map((item: Record<string, string>) => ({
+      symbol: item.symbol,
+      name: item.name,
+      currency: item.currency ?? '',
+      stockExchange: item.exchangeFullName ?? item.exchange ?? '',
+      exchangeShortName: item.exchange ?? '',
+    }));
   } catch (err) {
     console.error('[FMP] searchCompanies error:', err);
     return [];
@@ -45,8 +48,8 @@ export async function searchCompanies(query: string): Promise<FMPSearchResult[]>
 
 export async function listAvailableTranscripts(symbol: string): Promise<{ quarter: number; year: number }[]> {
   try {
-    // Use the v4 transcript list endpoint (returns available quarters, not full transcripts)
-    const url = `${FMP_BASE}/v4/earning_call_transcript?symbol=${symbol.toUpperCase()}&apikey=${API_KEY}`;
+    // Use the stable transcript dates endpoint
+    const url = `${FMP_BASE}/stable/earning-call-transcript-dates?symbol=${symbol.toUpperCase()}&apikey=${API_KEY}`;
     console.log('[FMP] listAvailableTranscripts:', url.replace(API_KEY, '***'));
     const res = await fetch(url);
     if (!res.ok) {
@@ -55,10 +58,10 @@ export async function listAvailableTranscripts(symbol: string): Promise<{ quarte
     }
     const data = await res.json();
     if (!Array.isArray(data)) return [];
-    // FMP returns array of [quarter, year, date] tuples or objects
-    return data.slice(0, 12).map((item: Record<string, unknown>) => ({
-      quarter: Number(item.quarter ?? item[0]),
-      year: Number(item.year ?? item[1]),
+    // Response: [{ quarter: 1, fiscalYear: 2025, date: "2025-01-30" }]
+    return data.slice(0, 20).map((item: Record<string, unknown>) => ({
+      quarter: Number(item.quarter),
+      year: Number(item.fiscalYear),
     }));
   } catch (err) {
     console.error('[FMP] listAvailableTranscripts error:', err);
@@ -72,18 +75,23 @@ export async function getTranscript(
   year: number
 ): Promise<TranscriptMeta | null> {
   try {
-    const url = `${FMP_BASE}/v3/earning_call_transcript/${symbol.toUpperCase()}?quarter=${quarter}&year=${year}&apikey=${API_KEY}`;
+    // Use the stable endpoint: /stable/earning-call-transcript?symbol=AAPL&year=2020&quarter=3
+    const url = `${FMP_BASE}/stable/earning-call-transcript?symbol=${symbol.toUpperCase()}&year=${year}&quarter=${quarter}&apikey=${API_KEY}`;
     console.log('[FMP] getTranscript:', url.replace(API_KEY, '***'));
     const res = await fetch(url);
     if (!res.ok) {
       console.error('[FMP] getTranscript failed:', res.status);
       return null;
     }
-    const data: FMPTranscript[] = await res.json();
+    const data: FMPTranscriptResponse[] = await res.json();
     if (!Array.isArray(data) || !data.length) return null;
+
+    // Parse quarter from period string (e.g., "Q3" -> 3)
+    const qNum = parseInt(data[0].period?.replace('Q', '') ?? String(quarter));
+
     return {
       symbol: data[0].symbol,
-      quarter: data[0].quarter,
+      quarter: qNum,
       year: data[0].year,
       date: data[0].date,
       content: data[0].content,
