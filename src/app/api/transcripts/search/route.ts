@@ -13,24 +13,29 @@ export async function GET(request: NextRequest) {
     const searchText = filters.symbols.length > 0 ? filters.symbols[0] : (filters.freeText || q);
     const companies = searchCompaniesLocal(searchText);
 
-    // For each matched company, fetch their available earnings events
     const results: { symbol: string; name: string; quarter?: number; year?: number }[] = [];
 
-    const lookups = companies.slice(0, 5).map(async (company) => {
-      const events = await getEvents(company.symbol, company.exchange);
-      if (events.length > 0) {
-        // Return the most recent events
-        for (const event of events.slice(0, 4)) {
-          if (filters.quarter && event.quarter !== filters.quarter) continue;
-          if (filters.year && event.year !== filters.year) continue;
-          results.push({
-            symbol: company.symbol,
-            name: company.name,
-            quarter: event.quarter,
-            year: event.year,
-          });
+    // Try to fetch events for each company, but don't fail if API errors
+    const lookups = companies.slice(0, 8).map(async (company) => {
+      try {
+        const events = await getEvents(company.symbol, company.exchange);
+        if (events.length > 0) {
+          for (const event of events.slice(0, 3)) {
+            if (filters.quarter && event.quarter !== filters.quarter) continue;
+            if (filters.year && event.year !== filters.year) continue;
+            results.push({
+              symbol: company.symbol,
+              name: company.name,
+              quarter: event.quarter,
+              year: event.year,
+            });
+          }
+        } else {
+          // No events found, still show company so user can navigate
+          results.push({ symbol: company.symbol, name: company.name });
         }
-      } else {
+      } catch {
+        // API failed for this company, still show it as clickable
         results.push({ symbol: company.symbol, name: company.name });
       }
     });

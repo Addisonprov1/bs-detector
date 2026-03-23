@@ -48,7 +48,9 @@ export async function getEvents(symbol: string, exchange: string = 'NASDAQ'): Pr
       return [];
     }
     const data = await res.json();
-    return Array.isArray(data) ? data : [];
+    // API returns { company_name, events: [...] }
+    const events = data?.events ?? data;
+    return Array.isArray(events) ? events : [];
   } catch (err) {
     console.error('[EC] getEvents error:', err);
     return [];
