@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { analyzeTranscript } from '@/lib/analyzer';
-import { getTranscript } from '@/lib/fmp';
+import { getTranscript, getCompanyExchange } from '@/lib/fmp';
 
 export const maxDuration = 90;
 
@@ -15,8 +15,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Fetch transcript
-    const transcript = await getTranscript(symbol, quarter, year);
+    // Fetch transcript from EarningsCall.biz
+    const exchange = getCompanyExchange(symbol);
+    const transcript = await getTranscript(symbol, quarter, year, exchange);
     if (!transcript || !transcript.content) {
       return NextResponse.json(
         { error: 'Transcript not available for this earnings call.' },
