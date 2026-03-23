@@ -32,14 +32,21 @@ export async function searchCompanies(query: string): Promise<FMPSearchResult[]>
     }
     const data = await res.json();
     if (!Array.isArray(data)) return [];
-    // Map response to our interface (stable API uses different field names)
-    return data.map((item: Record<string, string>) => ({
-      symbol: item.symbol,
-      name: item.name,
-      currency: item.currency ?? '',
-      stockExchange: item.exchangeFullName ?? item.exchange ?? '',
-      exchangeShortName: item.exchange ?? '',
-    }));
+    // Map response and filter to US exchanges (NASDAQ, NYSE)
+    const US_EXCHANGES = ['NASDAQ', 'NYSE', 'AMEX', 'NMS', 'NYQ', 'NGM', 'NAS'];
+    return data
+      .filter((item: Record<string, string>) => {
+        const exchange = (item.exchange ?? item.exchangeShortName ?? '').toUpperCase();
+        // Include if US exchange or if symbol has no dots (likely US ticker)
+        return US_EXCHANGES.some(e => exchange.includes(e)) || !item.symbol?.includes('.');
+      })
+      .map((item: Record<string, string>) => ({
+        symbol: item.symbol,
+        name: item.name,
+        currency: item.currency ?? '',
+        stockExchange: item.exchangeFullName ?? item.exchange ?? '',
+        exchangeShortName: item.exchange ?? '',
+      }));
   } catch (err) {
     console.error('[FMP] searchCompanies error:', err);
     return [];
