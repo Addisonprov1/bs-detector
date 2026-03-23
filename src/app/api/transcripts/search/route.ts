@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { searchCompanies, listTranscripts } from '@/lib/fmp';
+import { searchCompanies, listAvailableTranscripts } from '@/lib/fmp';
 import { parseSearchQuery } from '@/lib/search-parser';
 
 export async function GET(request: NextRequest) {
@@ -8,49 +8,46 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ results: [] });
   }
 
-  const filters = parseSearchQuery(q);
+  try {
+    const filters = parseSearchQuery(q);
 
-  // If we have specific symbols, search for their transcripts
-  if (filters.symbols.length > 0) {
-    const results = [];
-    for (const symbol of filters.symbols.slice(0, 5)) {
-      const transcripts = await listTranscripts(symbol);
-      for (const t of transcripts.slice(0, 4)) {
-        if (filters.quarter && t.quarter !== filters.quarter) continue;
-        if (filters.year && t.year !== filters.year) continue;
-        results.push({
-          symbol: t.symbol,
-          name: t.symbol,
-          quarter: t.quarter,
-          year: t.year,
-        });
-      }
+    // If we have specific ticker symbols, look up their available transcripts
+    if (filters.symbols.length > 0) {
+      const results: { symbol: string; name: string; quarter?: number; year?: number }[] = [];
+      const lookups = filters.symbols.slice(0, 5).map(async (symbol) => {
+        const transcripts = await listAvailableTranscripts(symbol);
+        for (const t of transcripts.slice(0, 4)) {
+          if (filters.quarter && t.quarter !== filters.quarter) continue;
+          if (filters.year && t.year !== filters.year) continue;
+          results.push({
+            symbol: symbol.toUpperCase(),
+            name: symbol.toUpperCase(),
+            quarter: t.quarter,
+            year: t.year,
+          });
+        }
+        // If no transcripts found, still return the symbol as a result
+        if (transcripts.length === 0) {
+          results.push({ symbol: symbol.toUpperCase(), name: symbol.toUpperCase() });
+        }
+      });
+      await Promise.all(lookups);
+      return NextResponse.json({ results });
     }
+
+    // Otherwise, search companies by name — return results immediately without
+    // looking up transcripts for each (that was causing the slowness/failures)
+    const searchText = filters.freeText || q;
+    const companies = await searchCompanies(searchText);
+
+    const results = companies.slice(0, 10).map((company) => ({
+      symbol: company.symbol,
+      name: company.name,
+    }));
+
     return NextResponse.json({ results });
+  } catch (err) {
+    console.error('[search] error:', err);
+    return NextResponse.json({ results: [], error: 'Search failed' });
   }
-
-  // Otherwise, search companies by name
-  const searchText = filters.freeText || q;
-  const companies = await searchCompanies(searchText);
-  const results = [];
-
-  for (const company of companies.slice(0, 8)) {
-    const transcripts = await listTranscripts(company.symbol);
-    if (transcripts.length > 0) {
-      const t = transcripts[0]; // Most recent
-      results.push({
-        symbol: company.symbol,
-        name: company.name,
-        quarter: t.quarter,
-        year: t.year,
-      });
-    } else {
-      results.push({
-        symbol: company.symbol,
-        name: company.name,
-      });
-    }
-  }
-
-  return NextResponse.json({ results });
 }
