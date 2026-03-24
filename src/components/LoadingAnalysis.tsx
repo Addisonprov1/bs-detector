@@ -37,13 +37,13 @@ export function LoadingAnalysis({ symbol, quarter, year }: { symbol: string; qua
     <div className="max-w-lg mx-auto py-20 px-4">
       <div className="win-window">
         <div className="win-title-bar">
-          <span>Analyzing {symbol} Q{quarter} {year}...</span>
+          <span>Analyzing {symbol}{quarter > 0 ? ` Q${quarter} ${year}` : ''}...</span>
           <div className="win-buttons"><span /><span /><span /></div>
         </div>
         <div className="win-body p-4">
           <div className="font-mono text-xs space-y-1 mb-4 max-h-48 overflow-y-auto">
             <div className="text-[#808080] mb-2">
-              C:\BS_DETECTOR&gt; analyze --transcript {symbol.toLowerCase()}-q{quarter}-{year}
+              C:\BS_DETECTOR&gt; analyze {quarter > 0 ? `--transcript ${symbol.toLowerCase()}-q${quarter}-${year}` : `--speech "${symbol}"`}
             </div>
 
             {lines.map((line, i) => (
