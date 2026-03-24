@@ -35,7 +35,7 @@ async function callSonar(
         { role: 'user', content: userPrompt },
       ],
       max_tokens: model === 'sonar-pro' ? 16000 : 4000,
-      temperature: 0.1,
+      temperature: 0.2,
     }),
   });
 
@@ -52,26 +52,40 @@ async function callSonar(
   };
 }
 
+function parseQuarter(q: unknown): number {
+  if (typeof q === 'number') return q;
+  if (typeof q === 'string') {
+    const match = q.match(/(\d)/);
+    return match ? parseInt(match[1]) : 0;
+  }
+  return 0;
+}
+
 export async function searchEarningsCalls(query: string): Promise<EarningsCallResult[]> {
   try {
     const { content, citations } = await callSonar(
-      `You are a financial data assistant. Given a company name or ticker symbol, find their recent quarterly earnings calls. Return ONLY a JSON array (no markdown, no explanation) of objects with these fields: symbol (string, uppercase ticker), companyName (string), quarter (number 1-4), year (number), date (string YYYY-MM-DD or empty string if unknown). Return up to 8 most recent results, sorted newest first. If you cannot find earnings call data, return an empty array [].`,
+      `You are a financial data assistant. Given a company name or ticker symbol, find their recent quarterly earnings calls. Return ONLY a JSON array (no markdown, no explanation) of objects with these fields: symbol (string, uppercase ticker), companyName (string), quarter (number 1-4, NOT a string like "Q1", just the number), year (number), date (string YYYY-MM-DD or empty string if unknown). Return up to 8 most recent results, sorted newest first. If you cannot find earnings call data, return an empty array [].`,
       `Find recent quarterly earnings calls for: ${query}`,
       'sonar'
     );
 
-    // Parse JSON from response
     let jsonStr = content.trim();
-    // Strip markdown code fences if present
     if (jsonStr.startsWith('```')) {
       jsonStr = jsonStr.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
     }
-    // Find the JSON array in the response
     const arrayMatch = jsonStr.match(/\[[\s\S]*\]/);
     if (!arrayMatch) return [];
 
-    const results: EarningsCallResult[] = JSON.parse(arrayMatch[0]);
-    return results.map((r) => ({ ...r, citations }));
+    const raw = JSON.parse(arrayMatch[0]);
+    const results: EarningsCallResult[] = raw.map((r: Record<string, unknown>) => ({
+      symbol: String(r.symbol || '').toUpperCase(),
+      companyName: String(r.companyName || r.symbol || ''),
+      quarter: parseQuarter(r.quarter),
+      year: typeof r.year === 'number' ? r.year : parseInt(String(r.year || '0')),
+      date: String(r.date || ''),
+      citations,
+    }));
+    return results.filter((r) => r.quarter > 0 && r.quarter <= 4 && r.year > 2000);
   } catch (err) {
     console.error('[Sonar] searchEarningsCalls error:', err);
     return [];
@@ -85,29 +99,18 @@ export async function getTranscriptViaSonar(
 ): Promise<(TranscriptMeta & { citations: string[] }) | null> {
   try {
     const { content, citations } = await callSonar(
-      `You are a financial transcript assistant. Return the full earnings call transcript for the requested company and quarter. Include all speaker names (CEO, CFO, analysts), their prepared remarks, and the full Q&A section. Be as complete and detailed as possible. Include exact quotes and statements. Do NOT summarize — provide the actual transcript text. If you cannot find the full transcript, provide as much of the actual transcript content as you can find, including key quotes and exchanges.`,
-      `Full earnings call transcript for ${symbol} Q${quarter} ${year}. Include all prepared remarks and Q&A.`,
+      `You are a financial transcript compiler. Your job is to reconstruct earnings call transcripts from all available web sources. Search thoroughly across financial news sites, investor relations pages, and transcript databases. Extract EVERY direct quote, paraphrase, and reported statement from the specified earnings call. Present them in transcript format with speaker names and their exact words. Include:
+1. Opening remarks / prepared statements from CEO and CFO
+2. Key financial metrics and guidance discussed
+3. The full analyst Q&A section with analyst names and questions
+4. Management responses with exact quotes where available
+Do NOT say you cannot find the transcript. Compile everything available into the most complete version possible. Use direct quotes whenever available.`,
+      `Reconstruct the ${symbol} Q${quarter} ${year} earnings call transcript. Extract every available quote from executives and the analyst Q&A. Search Seeking Alpha, Motley Fool, Reuters, Bloomberg, Yahoo Finance, the company IR page, and any other sources. Compile into a complete transcript format with speaker names.`,
       'sonar-pro'
     );
 
-    if (!content || content.length < 500) {
-      // Retry with more specific prompt
-      console.log('[Sonar] Short response, retrying with specific prompt...');
-      const retry = await callSonar(
-        `You are a financial transcript assistant. Provide the most complete version possible of the earnings call transcript. Include every speaker, every question from analysts, and every answer from management. Provide exact quotes. Do not summarize.`,
-        `I need the complete Q${quarter} ${year} earnings call transcript for ${symbol} (ticker). Please provide the full prepared remarks from the CEO and CFO, followed by the complete analyst Q&A section. Include all speaker names and their exact words.`,
-        'sonar-pro'
-      );
-      if (retry.content.length > content.length) {
-        return {
-          symbol: symbol.toUpperCase(),
-          quarter,
-          year,
-          date: '',
-          content: retry.content,
-          citations: retry.citations,
-        };
-      }
+    if (!content || content.length < 200) {
+      return null;
     }
 
     return {
@@ -181,7 +184,6 @@ export function searchCompaniesLocal(query: string): { symbol: string; name: str
     }
   }
 
-  // If query looks like a ticker not in our list, still include it
   if (results.length === 0 && /^[A-Z]{1,5}$/.test(query.toUpperCase())) {
     results.push({ symbol: query.toUpperCase(), name: query.toUpperCase(), exchange: 'NASDAQ' });
   }

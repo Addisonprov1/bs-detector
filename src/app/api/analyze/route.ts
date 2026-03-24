@@ -16,13 +16,16 @@ export async function POST(request: NextRequest) {
     }
 
     // Fetch transcript via Perplexity Sonar
+    console.log(`[analyze] Fetching transcript for ${symbol} Q${quarter} ${year}...`);
     const transcript = await getTranscriptViaSonar(symbol, quarter, year);
     if (!transcript || !transcript.content) {
       return NextResponse.json(
-        { error: 'Transcript not available for this earnings call.' },
+        { error: `Could not find transcript for ${symbol} Q${quarter} ${year}. Try pasting the transcript manually instead.` },
         { status: 404 }
       );
     }
+
+    console.log(`[analyze] Got ${transcript.content.length} chars, analyzing...`);
 
     // Analyze with Claude
     const analysis = await analyzeTranscript(transcript.content);
