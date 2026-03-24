@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { analyzeTranscript } from '@/lib/analyzer';
+import { storePasteResult } from '@/lib/paste-cache';
 
 export const maxDuration = 90;
 
@@ -16,7 +17,7 @@ export async function POST(request: NextRequest) {
 
     const analysis = await analyzeTranscript(transcript);
 
-    return NextResponse.json({
+    const result = {
       analysis,
       transcript,
       meta: {
@@ -25,7 +26,12 @@ export async function POST(request: NextRequest) {
         year: 0,
         date: new Date().toISOString().split('T')[0],
       },
-    });
+    };
+
+    // Store in server-side cache and return UUID
+    const id = storePasteResult(result);
+
+    return NextResponse.json({ id });
   } catch (err) {
     console.error('Paste analysis failed:', err);
     return NextResponse.json(

@@ -22,12 +22,10 @@ export function AnnotatedTranscript({ transcript, excerpts, onExcerptClick }: Pr
   const segments = useMemo(() => {
     if (!excerpts.length) return [{ text: transcript }];
 
-    // Find all excerpt positions in the transcript
     const matches: { start: number; end: number; excerpt: FlaggedExcerpt }[] = [];
 
     for (const excerpt of excerpts) {
       let searchFrom = 0;
-      // Find all occurrences
       while (true) {
         const idx = transcript.indexOf(excerpt.text, searchFrom);
         if (idx === -1) break;
@@ -36,10 +34,8 @@ export function AnnotatedTranscript({ transcript, excerpts, onExcerptClick }: Pr
       }
     }
 
-    // Sort by position
     matches.sort((a, b) => a.start - b.start);
 
-    // Remove overlaps (keep first match)
     const filtered: typeof matches = [];
     let lastEnd = 0;
     for (const m of matches) {
@@ -49,7 +45,6 @@ export function AnnotatedTranscript({ transcript, excerpts, onExcerptClick }: Pr
       }
     }
 
-    // Build segments
     const result: Segment[] = [];
     let pos = 0;
     for (const m of filtered) {
@@ -68,74 +63,80 @@ export function AnnotatedTranscript({ transcript, excerpts, onExcerptClick }: Pr
 
   return (
     <div className="relative">
-      <div className="text-[10px] text-[var(--color-text-muted)] tracking-widest uppercase mb-2">
-        Transcript
+      <div className="win-window">
+        <div className="win-title-bar">
+          <span>Transcript</span>
+          <div className="win-buttons"><span /><span /><span /></div>
+        </div>
+        <div className="win-body p-4 text-sm leading-relaxed max-h-[70vh] overflow-y-auto font-mono text-[#333]">
+          {segments.map((seg, i) => {
+            if (!seg.excerpt) {
+              return <span key={i}>{seg.text}</span>;
+            }
+
+            const cat = seg.excerpt.category as CategoryKey;
+            const meta = CATEGORY_META[cat];
+
+            return (
+              <mark
+                key={i}
+                className={`highlight-${cat} cursor-pointer rounded-sm px-0.5 relative`}
+                onMouseEnter={(e) => {
+                  setHoveredExcerpt(seg.excerpt!);
+                  const rect = (e.target as HTMLElement).getBoundingClientRect();
+                  setTooltipPos({ x: rect.left, y: rect.top - 8 });
+                }}
+                onMouseLeave={() => setHoveredExcerpt(null)}
+                onClick={() => onExcerptClick?.(cat)}
+                style={{ color: meta?.color }}
+              >
+                {seg.text}
+              </mark>
+            );
+          })}
+        </div>
       </div>
-      <div className="bg-[var(--color-bg-surface)] border border-[var(--color-border)] rounded-md p-4 text-sm leading-relaxed max-h-[70vh] overflow-y-auto font-mono text-[var(--color-text-secondary)]">
-        {segments.map((seg, i) => {
-          if (!seg.excerpt) {
-            return <span key={i}>{seg.text}</span>;
-          }
 
-          const cat = seg.excerpt.category as CategoryKey;
-          const meta = CATEGORY_META[cat];
-
-          return (
-            <mark
-              key={i}
-              className={`highlight-${cat} cursor-pointer rounded-sm px-0.5 relative`}
-              onMouseEnter={(e) => {
-                setHoveredExcerpt(seg.excerpt!);
-                const rect = (e.target as HTMLElement).getBoundingClientRect();
-                setTooltipPos({ x: rect.left, y: rect.top - 8 });
-              }}
-              onMouseLeave={() => setHoveredExcerpt(null)}
-              onClick={() => onExcerptClick?.(cat)}
-              style={{ color: meta?.color }}
-            >
-              {seg.text}
-            </mark>
-          );
-        })}
-      </div>
-
-      {/* Tooltip */}
+      {/* Tooltip as Win98 window */}
       {hoveredExcerpt && (
         <div
-          className="fixed z-50 max-w-xs rounded-md border border-[var(--color-border)] bg-[var(--color-bg-primary)] px-3 py-2 shadow-xl pointer-events-none"
+          className="fixed z-50 max-w-xs win-window pointer-events-none"
           style={{
-            left: Math.min(tooltipPos.x, window.innerWidth - 300),
+            left: Math.min(tooltipPos.x, (typeof window !== 'undefined' ? window.innerWidth : 1000) - 300),
             top: tooltipPos.y,
             transform: 'translateY(-100%)',
           }}
         >
-          <div className="flex items-center gap-2 mb-1">
-            <span
-              className="text-[9px] font-bold tracking-wider uppercase"
-              style={{ color: CATEGORY_META[hoveredExcerpt.category as CategoryKey]?.color }}
-            >
-              {hoveredExcerpt.category}
-            </span>
-            <span className="text-[9px] text-[var(--color-text-muted)]">·</span>
-            <span className="text-[9px] text-[var(--color-text-muted)]">
-              {hoveredExcerpt.subIndicatorName}
-            </span>
+          <div className="win-title-bar" style={{ padding: '2px 4px', fontSize: '10px' }}>
+            <span>{hoveredExcerpt.category}</span>
           </div>
-          <p className="text-[11px] text-[var(--color-text-secondary)] leading-snug">
-            {hoveredExcerpt.explanation}
-          </p>
+          <div className="win-body p-2">
+            <div className="flex items-center gap-2 mb-1">
+              <span
+                className="text-[9px] font-bold tracking-wider uppercase"
+                style={{ color: CATEGORY_META[hoveredExcerpt.category as CategoryKey]?.color }}
+              >
+                {CATEGORY_META[hoveredExcerpt.category as CategoryKey]?.label}
+              </span>
+            </div>
+            <p className="text-[10px] text-[#444] leading-snug">
+              {hoveredExcerpt.subIndicatorName}: {hoveredExcerpt.explanation}
+            </p>
+          </div>
         </div>
       )}
 
       {/* Legend */}
-      <div className="flex gap-3 flex-wrap mt-3">
+      <div className="flex gap-3 flex-wrap mt-3 px-1">
         {Object.entries(CATEGORY_META).map(([key, meta]) => (
-          <span key={key} className="flex items-center gap-1.5 text-[9px]">
+          <span key={key} className="flex items-center gap-1.5 text-[10px]">
             <span
-              className="w-2 h-2 rounded-full"
+              className="w-2.5 h-2.5 rounded-sm"
               style={{ backgroundColor: meta.color }}
             />
-            <span className="text-[var(--color-text-muted)]">{meta.label}</span>
+            <span style={{ color: 'rgba(255,255,255,0.7)', textShadow: '1px 1px 0 rgba(0,0,0,0.5)' }}>
+              {meta.label}
+            </span>
           </span>
         ))}
       </div>

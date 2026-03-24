@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Earnings Call BS Detector",
-  description: "AI-powered deception analysis for public company earnings calls. Backed by CIA TBA, FBI Statement Analysis, and academic research.",
+  title: "BS Detector - Earnings Call Analysis",
+  description: "AI-powered deception analysis for public company earnings calls.",
 };
 
 export default function RootLayout({
@@ -25,24 +25,48 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} h-full`}
     >
       <body className="min-h-full flex flex-col">
-        <nav className="border-b border-[var(--color-border)] px-6 py-3 flex items-center justify-between">
-          <a href="/" className="flex items-center gap-2">
-            <span className="text-[var(--color-accent-green)] text-xl font-bold">◉</span>
-            <span className="font-semibold tracking-wider text-sm">CALL DETECTOR</span>
+        {/* Win98 Taskbar-style nav */}
+        <nav
+          className="flex items-center justify-between px-1"
+          style={{
+            background: '#c0c0c0',
+            borderBottom: '2px solid',
+            borderColor: '#dfdfdf #808080 #808080 #dfdfdf',
+            height: '28px',
+          }}
+        >
+          <a
+            href="/"
+            className="win-button flex items-center gap-1.5 text-xs font-bold"
+            style={{ padding: '1px 10px', minWidth: 'auto', height: '22px' }}
+          >
+            <span style={{ fontSize: '14px' }}>&#128169;</span>
+            <span>BS Detector</span>
           </a>
-          <div className="flex gap-6 text-xs text-[var(--color-text-muted)]">
-            <a href="/" className="hover:text-[var(--color-text-secondary)] transition-colors">BROWSE</a>
-            <a href="/#leaderboard" className="hover:text-[var(--color-text-secondary)] transition-colors">LEADERBOARD</a>
+          <div className="flex items-center gap-1">
+            <a
+              href="/"
+              className="text-[11px] px-3 py-0.5 hover:bg-[#000080] hover:text-white transition-colors"
+            >
+              Browse
+            </a>
           </div>
         </nav>
+
         <main className="flex-1">{children}</main>
-        <footer className="border-t border-[var(--color-border)] px-6 py-3 text-[10px] text-[var(--color-text-muted)] flex justify-between">
-          <span>Powered by deception linguistics research (Larcker & Zakolyukina 2012, CIA TBA, CBCA)</span>
-          <span>Analysis by Claude AI</span>
-        </footer>
+
+        {/* Win98 Status bar footer */}
+        <div className="win-status-bar">
+          <span className="win-status-item flex-1">
+            Powered by Claude AI + Perplexity Sonar
+          </span>
+          <span className="win-status-item">
+            Deception linguistics (Larcker & Zakolyukina 2012)
+          </span>
+        </div>
       </body>
     </html>
   );

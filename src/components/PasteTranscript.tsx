@@ -33,9 +33,7 @@ export function PasteTranscript() {
         throw new Error(data.error || 'Analysis failed');
       }
       const data = await res.json();
-      // Store result in sessionStorage for the results page
-      sessionStorage.setItem('paste-analysis', JSON.stringify(data));
-      router.push('/analysis/paste/result');
+      router.push(`/analysis/paste/${data.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Analysis failed');
     } finally {
@@ -47,7 +45,8 @@ export function PasteTranscript() {
     return (
       <button
         onClick={() => setOpen(true)}
-        className="text-xs text-[var(--color-text-muted)] hover:text-[var(--color-accent-green)] transition-colors cursor-pointer underline underline-offset-2"
+        className="text-xs underline cursor-pointer"
+        style={{ color: 'rgba(255,255,255,0.7)', textShadow: '1px 1px 0 rgba(0,0,0,0.3)' }}
       >
         Or paste your own transcript
       </button>
@@ -55,48 +54,53 @@ export function PasteTranscript() {
   }
 
   return (
-    <div className="w-full max-w-2xl mx-auto mt-6">
-      <div className="bg-[var(--color-bg-surface)] border border-[var(--color-border)] rounded-md p-4">
-        <div className="flex items-center justify-between mb-3">
-          <span className="text-xs text-[var(--color-text-muted)] tracking-widest uppercase">
-            Paste Transcript
-          </span>
-          <button
-            onClick={() => setOpen(false)}
-            className="text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] cursor-pointer"
-          >
-            ✕
-          </button>
+    <div className="win-window w-full max-w-2xl mx-auto mt-4">
+      <div className="win-title-bar">
+        <span>Paste Transcript</span>
+        <div className="win-buttons">
+          <span />
+          <span />
+          <span onClick={() => setOpen(false)} style={{ cursor: 'pointer' }} />
         </div>
-
-        <input
-          type="text"
-          value={ticker}
-          onChange={(e) => setTicker(e.target.value)}
-          placeholder="Ticker symbol (optional, e.g. TSLA)"
-          className="w-full bg-[var(--color-bg-input)] border border-[var(--color-border)] rounded px-3 py-2 text-sm font-mono text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] outline-none focus:border-[var(--color-accent-green)]/40 mb-2"
-        />
+      </div>
+      <div className="win-body p-3">
+        <div className="flex gap-2 mb-2">
+          <label className="text-xs text-[#444] self-center min-w-[50px]">Ticker:</label>
+          <input
+            type="text"
+            value={ticker}
+            onChange={(e) => setTicker(e.target.value)}
+            placeholder="e.g. TSLA (optional)"
+            className="win-input flex-1 text-xs"
+          />
+        </div>
 
         <textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
           placeholder="Paste the full earnings call transcript here..."
           rows={8}
-          className="w-full bg-[var(--color-bg-input)] border border-[var(--color-border)] rounded px-3 py-2 text-xs font-mono text-[var(--color-text-secondary)] placeholder:text-[var(--color-text-muted)] outline-none focus:border-[var(--color-accent-green)]/40 resize-y"
+          className="win-input w-full text-xs font-mono resize-y"
         />
 
-        <div className="flex items-center justify-between mt-3">
-          <span className="text-[10px] text-[var(--color-text-muted)]">
-            {text.length.toLocaleString()} characters
+        <div className="flex items-center justify-between mt-2">
+          <span className="text-[11px] text-[#808080]">
+            {text.length.toLocaleString()} characters {text.length < 500 && text.length > 0 ? '(min 500)' : ''}
           </span>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             {error && (
-              <span className="text-xs text-[var(--color-accent-red)]">{error}</span>
+              <span className="text-[11px] text-[#dc2626]">{error}</span>
             )}
+            <button
+              onClick={() => setOpen(false)}
+              className="win-button text-xs"
+            >
+              Cancel
+            </button>
             <button
               onClick={handleAnalyze}
               disabled={loading || text.trim().length < 500}
-              className="px-4 py-1.5 text-xs font-mono rounded border border-[var(--color-accent-green)]/40 text-[var(--color-accent-green)] hover:bg-[var(--color-accent-green)]/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
+              className="win-button win-button-primary text-xs"
             >
               {loading ? 'Analyzing...' : 'Analyze'}
             </button>

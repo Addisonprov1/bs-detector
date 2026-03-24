@@ -13,7 +13,7 @@ export function ScoreBadge({ score, size = 'md' }: { score: number; size?: 'sm' 
   return (
     <span
       className={`font-mono font-bold rounded ${sizeClasses[size]} inline-flex items-center`}
-      style={{ backgroundColor: color, color: score > 75 ? '#fff' : '#000' }}
+      style={{ backgroundColor: color, color: '#fff' }}
     >
       {score}
     </span>
@@ -32,7 +32,9 @@ export function CircularScore({ score, size = 80 }: { score: number; size?: numb
         style={{
           width: size,
           height: size,
-          background: `conic-gradient(${color} 0% ${pct}%, var(--color-border) ${pct}% 100%)`,
+          background: `conic-gradient(${color} 0% ${pct}%, #c0c0c0 ${pct}% 100%)`,
+          border: '2px solid',
+          borderColor: '#808080 #dfdfdf #dfdfdf #808080',
         }}
       >
         <div
@@ -40,7 +42,8 @@ export function CircularScore({ score, size = 80 }: { score: number; size?: numb
           style={{
             width: innerSize,
             height: innerSize,
-            backgroundColor: 'var(--color-bg-primary)',
+            backgroundColor: '#ffffff',
+            border: '1px solid #c0c0c0',
           }}
         >
           <span className="font-mono font-extrabold text-xl" style={{ color }}>

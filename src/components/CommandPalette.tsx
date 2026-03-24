@@ -2,28 +2,18 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { ScoreBadge } from './ui/ScoreBadge';
 
 interface SearchResult {
   symbol: string;
   name: string;
   quarter?: number;
   year?: number;
-  score?: number;
 }
-
-const PRESETS = [
-  { label: '🔥 Most BS', query: 'most bs' },
-  { label: '✅ Straight Shooters', query: 'least bs' },
-  { label: '📈 Rising BS', query: 'rising bs' },
-  { label: '🏦 FAANG', query: 'AAPL AMZN GOOGL META NFLX' },
-];
 
 export function CommandPalette() {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
-  const [open, setOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -33,11 +23,6 @@ export function CommandPalette() {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
         inputRef.current?.focus();
-        setOpen(true);
-      }
-      if (e.key === 'Escape') {
-        setOpen(false);
-        inputRef.current?.blur();
       }
     }
     window.addEventListener('keydown', handleKeyDown);
@@ -74,73 +59,59 @@ export function CommandPalette() {
     } else {
       router.push(`/company/${result.symbol}`);
     }
-    setOpen(false);
   }
 
   return (
-    <div className="w-full max-w-2xl mx-auto relative">
-      <div
-        className={`rounded-lg border transition-all ${open ? 'border-[var(--color-accent-green)]/40 shadow-[0_0_20px_rgba(0,255,136,0.08)]' : 'border-[var(--color-border)]'}`}
-        style={{ backgroundColor: 'var(--color-bg-input)' }}
-      >
-        <div className="flex items-center gap-3 px-4 py-3">
-          <span className={`text-sm ${open ? 'text-[var(--color-accent-green)]' : 'text-[var(--color-text-muted)]'}`}>❯</span>
-          <input
-            ref={inputRef}
-            type="text"
-            value={query}
-            onChange={(e) => handleSearch(e.target.value)}
-            onFocus={() => setOpen(true)}
-            placeholder="Search ticker, company, CEO... or try 'tech sector bs > 70'"
-            className="flex-1 bg-transparent text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] outline-none font-mono"
-          />
-          <kbd className="hidden sm:inline-block text-[10px] text-[var(--color-text-muted)] border border-[var(--color-border)] rounded px-1.5 py-0.5">
-            ⌘K
-          </kbd>
-          {loading && (
-            <div className="w-4 h-4 border-2 border-[var(--color-accent-green)]/30 border-t-[var(--color-accent-green)] rounded-full animate-spin" />
-          )}
+    <div>
+      <div className="flex items-center gap-2">
+        <input
+          ref={inputRef}
+          type="text"
+          value={query}
+          onChange={(e) => handleSearch(e.target.value)}
+          placeholder="Search any ticker or company name..."
+          className="win-input flex-1 text-sm"
+        />
+        <button
+          className="win-button win-button-primary text-xs"
+          onClick={() => handleSearch(query)}
+          style={{ minWidth: '80px' }}
+        >
+          {loading ? 'Searching...' : 'Search'}
+        </button>
+      </div>
+
+      {loading && (
+        <div className="mt-2 text-xs text-[#808080] flex items-center gap-2">
+          <span className="inline-block w-3 h-3 border border-[#808080] border-t-[#000080] rounded-full animate-spin" />
+          Searching the web for earnings calls...
         </div>
+      )}
 
-        {open && results.length > 0 && (
-          <div className="border-t border-[var(--color-border)]">
-            {results.map((r, i) => (
-              <button
-                key={`${r.symbol}-${r.quarter}-${r.year}-${i}`}
-                onClick={() => handleSelect(r)}
-                className={`w-full flex items-center justify-between px-4 py-2.5 text-left hover:bg-[var(--color-accent-green)]/5 transition-colors ${i === 0 ? 'bg-[var(--color-accent-green)]/[0.03]' : ''}`}
-              >
-                <div className="flex items-center gap-3">
-                  <span className="font-mono font-bold text-sm">{r.symbol}</span>
-                  <span className="text-xs text-[var(--color-text-muted)]">
-                    {r.name}
-                    {r.quarter && r.year && ` · Q${r.quarter} ${r.year}`}
-                  </span>
-                </div>
-                {r.score != null && <ScoreBadge score={r.score} size="sm" />}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Quick filter presets */}
-      <div className="flex gap-2 justify-center mt-4 flex-wrap">
-        {PRESETS.map((p) => (
-          <button
-            key={p.label}
-            onClick={() => {
-              setQuery(p.query);
-              handleSearch(p.query);
-              setOpen(true);
-              inputRef.current?.focus();
-            }}
-            className="text-xs px-3 py-1.5 rounded bg-[var(--color-bg-surface)] border border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] hover:border-[var(--color-text-muted)] transition-all cursor-pointer"
-          >
-            {p.label}
-          </button>
-        ))}
-      </div>
+      {results.length > 0 && (
+        <div className="mt-2 border border-[#808080] bg-white max-h-64 overflow-y-auto">
+          {results.map((r, i) => (
+            <button
+              key={`${r.symbol}-${r.quarter}-${r.year}-${i}`}
+              onClick={() => handleSelect(r)}
+              className={`w-full flex items-center justify-between px-3 py-2 text-left hover:bg-[#000080] hover:text-white transition-colors text-sm cursor-pointer ${
+                i !== results.length - 1 ? 'border-b border-[#dfdfdf]' : ''
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <span className="font-mono font-bold text-xs">{r.symbol}</span>
+                <span className="text-xs opacity-70">
+                  {r.name}
+                  {r.quarter && r.year && ` \u00b7 Q${r.quarter} ${r.year}`}
+                </span>
+              </div>
+              {r.quarter && r.year && (
+                <span className="text-[10px] opacity-50">Analyze &rarr;</span>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

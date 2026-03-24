@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getEvents, getCompanyExchange } from '@/lib/fmp';
+import { searchEarningsCalls } from '@/lib/perplexity';
 
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ symbol: string }> }
 ) {
   const { symbol } = await params;
-  const exchange = getCompanyExchange(symbol);
-  const events = await getEvents(symbol, exchange);
-  const transcripts = events.map((e) => ({ quarter: e.quarter, year: e.year }));
+  const results = await searchEarningsCalls(symbol);
+  const transcripts = results.map((r) => ({ quarter: r.quarter, year: r.year }));
   return NextResponse.json({ transcripts });
 }

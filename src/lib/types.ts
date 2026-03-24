@@ -40,6 +40,7 @@ export interface TranscriptMeta {
   year: number;
   date: string;
   content: string;
+  citations?: string[];
 }
 
 export interface LeaderboardEntry {
@@ -56,20 +57,20 @@ export interface LeaderboardEntry {
 export type CategoryKey = keyof AnalysisResult['categories'];
 
 export const CATEGORY_META: Record<CategoryKey, { label: string; color: string; bgColor: string }> = {
-  evasion: { label: 'Evasion & Non-Answers', color: '#ff4444', bgColor: 'rgba(255,68,68,0.15)' },
-  hedging: { label: 'Hedging & Uncertainty', color: '#ffcc00', bgColor: 'rgba(255,204,0,0.15)' },
-  distancing: { label: 'Distancing', color: '#00ff88', bgColor: 'rgba(0,255,136,0.15)' },
-  persuasion: { label: 'Persuasion Overload', color: '#ff8800', bgColor: 'rgba(255,136,0,0.15)' },
-  cognitiveLoad: { label: 'Cognitive Load', color: '#4488ff', bgColor: 'rgba(68,136,255,0.15)' },
-  emotionalLeakage: { label: 'Emotional Leakage', color: '#cc44ff', bgColor: 'rgba(204,68,255,0.15)' },
-  strategicOmission: { label: 'Strategic Omission', color: '#00cccc', bgColor: 'rgba(0,204,204,0.15)' },
+  evasion: { label: 'Evasion & Non-Answers', color: '#dc2626', bgColor: 'rgba(220,38,38,0.12)' },
+  hedging: { label: 'Hedging & Uncertainty', color: '#ca8a04', bgColor: 'rgba(202,138,4,0.12)' },
+  distancing: { label: 'Distancing', color: '#16a34a', bgColor: 'rgba(22,163,74,0.12)' },
+  persuasion: { label: 'Persuasion Overload', color: '#ea580c', bgColor: 'rgba(234,88,12,0.12)' },
+  cognitiveLoad: { label: 'Cognitive Load', color: '#2563eb', bgColor: 'rgba(37,99,235,0.12)' },
+  emotionalLeakage: { label: 'Emotional Leakage', color: '#9333ea', bgColor: 'rgba(147,51,234,0.12)' },
+  strategicOmission: { label: 'Strategic Omission', color: '#0891b2', bgColor: 'rgba(8,145,178,0.12)' },
 };
 
 export function getScoreColor(score: number): string {
-  if (score <= 25) return '#00ff88';
-  if (score <= 50) return '#ffcc00';
-  if (score <= 75) return '#ff8800';
-  return '#ff4444';
+  if (score <= 25) return '#16a34a';
+  if (score <= 50) return '#ca8a04';
+  if (score <= 75) return '#ea580c';
+  return '#dc2626';
 }
 
 export function getSeverityLabel(score: number): AnalysisResult['severityLabel'] {

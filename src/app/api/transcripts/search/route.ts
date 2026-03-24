@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { searchCompaniesLocal, getEvents, getCompanyExchange } from '@/lib/fmp';
+import { searchCompaniesLocal, searchEarningsCalls } from '@/lib/perplexity';
 import { parseSearchQuery } from '@/lib/search-parser';
 
 export async function GET(request: NextRequest) {
@@ -11,36 +11,40 @@ export async function GET(request: NextRequest) {
   try {
     const filters = parseSearchQuery(q);
     const searchText = filters.symbols.length > 0 ? filters.symbols[0] : (filters.freeText || q);
-    const companies = searchCompaniesLocal(searchText);
 
+    // Phase 1: Instant local matches
+    const localCompanies = searchCompaniesLocal(searchText);
     const results: { symbol: string; name: string; quarter?: number; year?: number }[] = [];
 
-    // Try to fetch events for each company, but don't fail if API errors
-    const lookups = companies.slice(0, 8).map(async (company) => {
-      try {
-        const events = await getEvents(company.symbol, company.exchange);
-        if (events.length > 0) {
-          for (const event of events.slice(0, 3)) {
-            if (filters.quarter && event.quarter !== filters.quarter) continue;
-            if (filters.year && event.year !== filters.year) continue;
-            results.push({
-              symbol: company.symbol,
-              name: company.name,
-              quarter: event.quarter,
-              year: event.year,
-            });
-          }
-        } else {
-          // No events found, still show company so user can navigate
-          results.push({ symbol: company.symbol, name: company.name });
-        }
-      } catch {
-        // API failed for this company, still show it as clickable
-        results.push({ symbol: company.symbol, name: company.name });
-      }
-    });
+    // Add local matches immediately
+    for (const company of localCompanies.slice(0, 5)) {
+      results.push({ symbol: company.symbol, name: company.name });
+    }
 
-    await Promise.all(lookups);
+    // Phase 2: Sonar search for earnings call events
+    try {
+      const sonarResults = await searchEarningsCalls(searchText);
+      for (const sr of sonarResults) {
+        if (filters.quarter && sr.quarter !== filters.quarter) continue;
+        if (filters.year && sr.year !== filters.year) continue;
+
+        // Avoid duplicates
+        const exists = results.some(
+          (r) => r.symbol === sr.symbol && r.quarter === sr.quarter && r.year === sr.year
+        );
+        if (!exists) {
+          results.push({
+            symbol: sr.symbol,
+            name: sr.companyName,
+            quarter: sr.quarter,
+            year: sr.year,
+          });
+        }
+      }
+    } catch {
+      // Sonar failed, still return local results
+      console.error('[search] Sonar search failed, using local results only');
+    }
 
     // Sort: specific quarter results first, then by year desc
     results.sort((a, b) => {

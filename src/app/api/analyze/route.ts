@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { analyzeTranscript } from '@/lib/analyzer';
-import { getTranscript, getCompanyExchange } from '@/lib/fmp';
+import { getTranscriptViaSonar } from '@/lib/perplexity';
 
 export const maxDuration = 90;
 
@@ -15,9 +15,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Fetch transcript from EarningsCall.biz
-    const exchange = getCompanyExchange(symbol);
-    const transcript = await getTranscript(symbol, quarter, year, exchange);
+    // Fetch transcript via Perplexity Sonar
+    const transcript = await getTranscriptViaSonar(symbol, quarter, year);
     if (!transcript || !transcript.content) {
       return NextResponse.json(
         { error: 'Transcript not available for this earnings call.' },
@@ -36,6 +35,7 @@ export async function POST(request: NextRequest) {
         quarter: transcript.quarter,
         year: transcript.year,
         date: transcript.date,
+        citations: transcript.citations,
       },
     });
   } catch (err) {

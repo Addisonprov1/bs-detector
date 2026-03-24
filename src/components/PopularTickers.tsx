@@ -3,66 +3,44 @@
 import { useRouter } from 'next/navigation';
 
 const TICKERS = [
-  { symbol: 'AAPL', name: 'Apple', sector: 'Tech', icon: '&#127823;' },
-  { symbol: 'MSFT', name: 'Microsoft', sector: 'Tech', icon: '&#128187;' },
-  { symbol: 'GOOGL', name: 'Alphabet', sector: 'Tech', icon: '&#128269;' },
-  { symbol: 'AMZN', name: 'Amazon', sector: 'Tech', icon: '&#128230;' },
-  { symbol: 'TSLA', name: 'Tesla', sector: 'Auto', icon: '&#9889;' },
-  { symbol: 'META', name: 'Meta', sector: 'Tech', icon: '&#128064;' },
-  { symbol: 'NVDA', name: 'NVIDIA', sector: 'Chips', icon: '&#129302;' },
-  { symbol: 'NFLX', name: 'Netflix', sector: 'Media', icon: '&#127916;' },
-  { symbol: 'JPM', name: 'JPMorgan', sector: 'Finance', icon: '&#127974;' },
-  { symbol: 'BAC', name: 'BofA', sector: 'Finance', icon: '&#128176;' },
-  { symbol: 'GS', name: 'Goldman Sachs', sector: 'Finance', icon: '&#128200;' },
-  { symbol: 'DIS', name: 'Disney', sector: 'Media', icon: '&#127917;' },
-  { symbol: 'COIN', name: 'Coinbase', sector: 'Crypto', icon: '&#129689;' },
-  { symbol: 'CRM', name: 'Salesforce', sector: 'SaaS', icon: '&#9729;' },
-  { symbol: 'UBER', name: 'Uber', sector: 'Transport', icon: '&#128663;' },
-  { symbol: 'PLTR', name: 'Palantir', sector: 'Data', icon: '&#128065;' },
-  { symbol: 'AMD', name: 'AMD', sector: 'Chips', icon: '&#128308;' },
-  { symbol: 'BA', name: 'Boeing', sector: 'Defense', icon: '&#9992;' },
-  { symbol: 'PFE', name: 'Pfizer', sector: 'Pharma', icon: '&#128138;' },
-  { symbol: 'SNAP', name: 'Snap', sector: 'Social', icon: '&#128123;' },
+  { symbol: 'AAPL', name: 'Apple', icon: '\ud83c\udf4e' },
+  { symbol: 'MSFT', name: 'Microsoft', icon: '\ud83d\udcbb' },
+  { symbol: 'GOOGL', name: 'Alphabet', icon: '\ud83d\udd0d' },
+  { symbol: 'AMZN', name: 'Amazon', icon: '\ud83d\udce6' },
+  { symbol: 'TSLA', name: 'Tesla', icon: '\u26a1' },
+  { symbol: 'META', name: 'Meta', icon: '\ud83d\udc40' },
+  { symbol: 'NVDA', name: 'NVIDIA', icon: '\ud83e\udd16' },
+  { symbol: 'NFLX', name: 'Netflix', icon: '\ud83c\udfa5' },
+  { symbol: 'JPM', name: 'JPMorgan', icon: '\ud83c\udfe6' },
+  { symbol: 'COIN', name: 'Coinbase', icon: '\ud83e\ude99' },
+  { symbol: 'CRM', name: 'Salesforce', icon: '\u2601\ufe0f' },
+  { symbol: 'UBER', name: 'Uber', icon: '\ud83d\ude97' },
+  { symbol: 'PLTR', name: 'Palantir', icon: '\ud83d\udc41\ufe0f' },
+  { symbol: 'BA', name: 'Boeing', icon: '\u2708\ufe0f' },
+  { symbol: 'DIS', name: 'Disney', icon: '\ud83c\udfa0' },
+  { symbol: 'GS', name: 'Goldman', icon: '\ud83d\udcc8' },
+  { symbol: 'AMD', name: 'AMD', icon: '\ud83d\udd34' },
+  { symbol: 'PFE', name: 'Pfizer', icon: '\ud83d\udc8a' },
+  { symbol: 'SNAP', name: 'Snap', icon: '\ud83d\udc7b' },
+  { symbol: 'BAC', name: 'BofA', icon: '\ud83d\udcb0' },
 ];
 
 export function PopularTickers() {
   const router = useRouter();
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xs text-[var(--color-text-muted)] uppercase tracking-widest font-mono">
-          Popular Companies
-        </h2>
-        <span className="text-[10px] text-[var(--color-text-muted)]">
-          Click to see available earnings calls
-        </span>
-      </div>
-      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-2">
-        {TICKERS.map((t) => (
-          <button
-            key={t.symbol}
-            onClick={() => router.push(`/company/${t.symbol}`)}
-            className="group flex items-center gap-2.5 px-3 py-2.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-surface)] hover:border-[var(--color-accent-green)]/30 hover:bg-[var(--color-accent-green)]/[0.03] transition-all text-left cursor-pointer"
-          >
-            <span
-              className="text-base opacity-60 group-hover:opacity-100 transition-opacity"
-              dangerouslySetInnerHTML={{ __html: t.icon }}
-            />
-            <div className="min-w-0">
-              <div className="font-mono text-xs font-bold text-[var(--color-text-primary)] group-hover:text-[var(--color-accent-green)] transition-colors truncate">
-                {t.symbol}
-              </div>
-              <div className="text-[10px] text-[var(--color-text-muted)] truncate">
-                {t.name}
-              </div>
-            </div>
-            <span className="ml-auto text-[10px] text-[var(--color-text-muted)] bg-[var(--color-bg-primary)] px-1.5 py-0.5 rounded font-mono shrink-0">
-              {t.sector}
-            </span>
-          </button>
-        ))}
-      </div>
+    <div className="flex flex-wrap justify-center gap-1">
+      {TICKERS.map((t) => (
+        <button
+          key={t.symbol}
+          onClick={() => router.push(`/company/${t.symbol}`)}
+          className="desktop-icon"
+          title={t.name}
+        >
+          <div className="desktop-icon-img">{t.icon}</div>
+          <div className="desktop-icon-label">{t.symbol}</div>
+        </button>
+      ))}
     </div>
   );
 }
